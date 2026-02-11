@@ -33,13 +33,6 @@ Please provide:
 - **Suggested fix:** If you have one (optional but helpful)
 - **Credit:** How you'd like to be credited (if fix is accepted)
 
-### Response Timeline
-
-- **Initial response:** Within 48 hours
-- **Triage and severity assessment:** Within 1 week
-- **Fix development and testing:** 2-4 weeks depending on severity
-- **Public disclosure:** After fix is released and users have time to update (typically 2 weeks post-release)
-
 ## Security Fixes in Version 6.0
 
 The following critical vulnerabilities were identified and fixed in version 6.0:
@@ -181,8 +174,6 @@ Prefect v6.0 underwent comprehensive security review:
 - **Static analysis:** ShellCheck integration
 - **Threat modeling:** Attack vectors documented and mitigated
 
-Full security assessment available in `PanelOutput/panelist-2-assessment.md`.
-
 ## Acknowledgments
 
 Security researchers who responsibly disclose vulnerabilities will be credited in release notes and this document.
@@ -195,4 +186,4 @@ For security concerns: Use GitHub Security Advisories (preferred) or contact mai
 
 **Last Updated:** February 2026
 **Security Version:** 6.0
-**Status:** All critical vulnerabilities fixed ✅
+**Status:** Known critical vulnerabilities fixed ✅

@@ -125,7 +125,8 @@ fi
 if [ "$DIRNAME" = "." ] || [ "$DIRNAME" = "$PROJECT_DIR" ]; then
   ALLOWED_ROOT=(
     "PREFECT-POLICY.md" "CLAUDE.md" "PREFECT-FEEDBACK.md"
-    "README.md" "LICENSE" "LICENSE.md"
+    "README.md" "SECURITY.md" "LICENSE" "LICENSE.md"
+    "lockdown.sh"
     "package.json" "package-lock.json" "pnpm-lock.yaml" "yarn.lock"
     "tsconfig.json" "requirements.txt" "pyproject.toml"
     "setup.py" "setup.cfg" "Makefile" "Dockerfile"

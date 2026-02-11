@@ -206,6 +206,52 @@ claude
 
 Hooks will now execute via Git Bash automatically.
 
+## Framework Directory Structure
+
+This is the structure of the Prefect Framework repository itself. **For your project's structure**, see the template in `D-ARCH-STRUCTURE.md`.
+
+```
+Prefect-AI-Governance-Framework/
+├── .claude/
+│   ├── hooks/                         # Enforcement hooks (5 scripts)
+│   │   ├── prefect-guard.sh           # Pre-write file protection
+│   │   ├── prefect-bash-guard.sh      # Bash command validation
+│   │   ├── prefect-post-check.sh      # Post-write validation
+│   │   ├── prefect-audit.sh           # Project health scoring
+│   │   └── prefect-session-end.sh     # Session logging
+│   └── settings.json                  # Hook configuration (read-only)
+├── .github/
+│   └── workflows/                     # CI/CD automation
+│       ├── security-tests.yml         # Security validation workflow
+│       └── README.md                  # Workflow documentation
+├── docs/                              # Documentation & templates
+│   ├── AI-UAT-CHECKLIST.md           # UAT template for users
+│   ├── PRODUCT-SPEC.md               # Product spec template
+│   └── SESSION-LOG.md                # Auto-generated session history
+├── src/                               # Framework extensions (reserved)
+├── tests/                             # Framework test suite
+│   ├── security/                      # Security vulnerability tests
+│   │   ├── test-symlink-attack.sh    # P2-V1
+│   │   ├── test-path-traversal.sh    # P2-V2
+│   │   ├── test-command-injection.sh # P2-V3
+│   │   ├── test-exit-codes.sh        # P2-V4
+│   │   ├── quick-test.sh             # Fast validation
+│   │   └── README.md
+│   ├── test-guard.sh
+│   ├── test-bash-guard.sh
+│   └── run-tests.sh
+├── PREFECT-POLICY.md                  # Constitution (human-owned)
+├── CLAUDE.md                          # Governance template
+├── PREFECT-FEEDBACK.md                # Feedback loop
+├── D-ARCH-STRUCTURE.md                # User project template
+├── D-WORK-WORKFLOW.md                 # Workflow guidance
+├── lockdown.sh                        # Lock/unlock governance files
+├── SECURITY.md                        # Security model docs
+├── README.md                          # This file
+├── LICENSE                            # MIT license
+└── .gitignore
+```
+
 ## How It Works
 
 ### Layer 1: Prevention (real-time blocking)

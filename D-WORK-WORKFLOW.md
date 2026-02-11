@@ -232,7 +232,7 @@ Full flow as described above.
 - Extra checkpoints (every 2-3 files)
 - Full drift audit in VERIFY
 - Full UAT self-test against every criterion
-- Update DECISIONS section in ARCHITECTURE.md
+- Document architectural decisions in PREFECT-FEEDBACK.md
 
 ---
 

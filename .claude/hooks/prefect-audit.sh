@@ -56,7 +56,8 @@ for f in "$PROJECT_DIR"/*; do
   [ ! -f "$f" ] && continue
   fname=$(basename "$f")
   case "$fname" in
-    PREFECT-POLICY.md|CLAUDE.md|PREFECT-FEEDBACK.md|README.md|LICENSE*) ;;
+    PREFECT-POLICY.md|CLAUDE.md|PREFECT-FEEDBACK.md|README.md|SECURITY.md|LICENSE*) ;;
+    lockdown.sh) ;;
     D-*.md) ;;
     package.json|package-lock.json|pnpm-lock.yaml|yarn.lock) ;;
     tsconfig.json|tsconfig.*.json|requirements.txt|pyproject.toml) ;;

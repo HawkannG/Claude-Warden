@@ -157,9 +157,12 @@ The project root may ONLY contain:
 - `PREFECT-POLICY.md` (this file)
 - `CLAUDE.md` (operating instructions)
 - `PREFECT-FEEDBACK.md` (feedback loop)
-- `README.md` (project overview — a project file, not governance)
+- `README.md` (project overview)
+- `SECURITY.md` (security model documentation)
+- `LICENSE` or `LICENSE.md` (project license)
+- `lockdown.sh` (governance file lock/unlock utility)
 - `D-{AREA}-{NAME}.md` files (registered directives only)
-- Standard config files (`.gitignore`, `package.json`, `requirements.txt`, `docker-compose.yml`, `Makefile`, `.folderslintrc`, `.ls-lint.yml`, etc.)
+- Standard config files (`.gitignore`, `package.json`, `requirements.txt`, `docker-compose.yml`, `Makefile`, `.folderslintrc`, `.ls-lint.yml`, `tsconfig.json`, `pyproject.toml`, etc.)
 
 ### 4.2 Forbidden at Root
 

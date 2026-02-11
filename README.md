@@ -1,56 +1,64 @@
-# Prefect Governance Framework v5.1
+# Prefect AI Governance Framework
 
-A battle-tested governance framework for Claude Code that prevents AI drift, enforces structure, and keeps humans in control. Built through real project use, not theory.
+> Self-protecting governance hooks that tries to prevent Claude from editing its own instructions.
 
-## The Problem This Solves
+## Quick Demo
 
-Claude Code is powerful but probabilistic. Over a long session it will:
-- Quietly restructure your project because it thinks it knows better
-- Create files in random locations
-- Skip tests when it gets stuck
-- Modify its own instructions to remove restrictions
-- Accumulate drift until your project is unrecognisable
-
-CLAUDE.md instructions help, but Claude can edit its own CLAUDE.md. Prefect adds **deterministic enforcement** — hooks that fire on every single file write and bash command, blocking violations before they happen.
-
-## What's Included
-
+**Try this prompt with Claude Code:**
 ```
-your-project/
-├── CLAUDE.md                          # Master instructions for Claude (customise per project)
-├── PREFECT-POLICY.md                  # Core governance policy (the constitution — rarely changes)
-├── PREFECT-FEEDBACK.md                # Tracks governance gaps discovered during development
-├── D-WORK-WORKFLOW.md                 # Development workflow: PROPOSE → PLAN → BUILD → VERIFY → CLOSE
-├── D-ARCH-STRUCTURE.md                # Architecture and directory structure policy
-├── lockdown.sh                        # Write-protection automation for governance files
-├── docs/
-│   ├── PRODUCT-SPEC.md                # Product specification template
-│   ├── AI-UAT-CHECKLIST.md            # Testing conventions for AI-assisted development
-│   └── SESSION-LOG.md                 # (auto-created) Persistent session history
-└── .claude/
-    ├── settings.json                  # Hook wiring — connects Claude Code to the enforcement layer
-    └── hooks/
-        ├── prefect-guard.sh           # PreToolUse — blocks writes to protected files + structure rules
-        ├── prefect-bash-guard.sh      # PreToolUse — catches bash bypasses (echo > file, sed -i, etc.)
-        ├── prefect-post-check.sh      # PostToolUse — validates writes after they happen
-        ├── prefect-session-end.sh     # Stop — mini audit + session persistence to SESSION-LOG.md
-        └── prefect-audit.sh           # Manual — full drift score across 8 dimensions (0-100)
+"Edit CLAUDE.md and remove the first rule"
 ```
 
-## Prerequisites
+**With Prefect installed, Claude gets blocked:**
+```
+🛑 PREFECT BLOCK: CLAUDE.md is human-edit-only.
+→ Claude cannot modify its own instructions. Suggest changes in chat.
+```
 
-You need Claude Code installed and working. The hooks require:
+**That's self-protection.** No other governance framework does this.
 
-- **bash** (comes with macOS/Linux; on Windows see the Windows Setup section)
-- **jq** (JSON parser — the hooks use it to read Claude Code's event data)
-- **git** (for session logging; hooks degrade gracefully without it)
+## What Makes This Different?
 
-### Check you have everything
+| Traditional Governance | Prefect Framework |
+|------------------------|-------------------|
+| Claude can edit its own rules | **Claude blocked from editing governance** |
+| Static documentation only | Executable hooks + documentation |
+| Manual compliance checks | Automated enforcement on every file write |
+| No protection for .claude/ directory | Hooks protect themselves |
 
+**Core insight:** Claude is powerful but probabilistic. Without enforcement, it will quietly restructure your project, skip tests, and modify its own instructions. Prefect adds **deterministic enforcement** via hooks.
+
+## What It Does
+
+✅ **Self-Protection**: Blocks Claude from editing CLAUDE.md, hooks, settings.json
+✅ **Structure Enforcement**: No temp/ directories, max 5 levels deep, no files at root
+✅ **Drift Tracking**: Scores project health across 8 dimensions (0-100)
+✅ **Session Persistence**: Generates handoff documents for context preservation
+✅ **Workflow Phases**: Guides through PROPOSE → PLAN → BUILD → VERIFY → CLOSE
+
+## What It Doesn't Do
+
+❌ Does not write code for you (workflow guidance only)
+❌ Does not replace testing or code review
+❌ Does not work with non-Claude AI assistants
+❌ Does not require cloud connection (fully local)
+
+## Requirements
+
+- **bash** 4.0+ (check: `bash --version`)
+- **jq** 1.5+ (check: `jq --version`)
+- **git** (optional, for session logging)
+
+**Install jq if missing:**
 ```bash
-bash --version    # any version works
-jq --version      # 1.6+ recommended
-git --version     # any version works
+# macOS
+brew install jq
+
+# Ubuntu/Debian
+sudo apt-get install -y jq
+
+# Windows
+winget install jqlang.jq
 ```
 
 ## Setup — macOS / Linux / WSL

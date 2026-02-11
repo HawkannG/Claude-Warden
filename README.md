@@ -21,7 +21,7 @@
 |------------------------|-------------------|
 | Claude can edit its own rules | Claude blocked from editing governance |
 | Static documentation only | Executable hooks + documentation |
-| Manual compliance checks | Automated enforcement on every file write |
+| Manual compliance checks | Automated enforcement file write |
 | No protection for .claude/ directory | Hooks protect themselves |
 
 **Core insight:** Claude is powerful but probabilistic. Without enforcement, it will quietly restructure your project, skip tests, and modify its own instructions. Prefect adds **deterministic enforcement** via hooks.
@@ -196,7 +196,7 @@ Hooks will now execute via Git Bash automatically.
 
 ### Layer 1: Prevention (real-time blocking)
 
-**prefect-guard.sh** fires on every Write, Edit, and MultiEdit tool call. It:
+**prefect-guard.sh** fires on Write, Edit, and MultiEdit tool call. It:
 - Blocks edits to CLAUDE.md, PREFECT-POLICY.md, hooks, and settings.json
 - Blocks file creation at project root (unless in the allowlist)
 - Blocks directory nesting deeper than 5 levels
@@ -204,7 +204,7 @@ Hooks will now execute via Git Bash automatically.
 - Warns on files exceeding 250 lines
 - Resolves symlinks to prevent bypass attempts
 
-**prefect-bash-guard.sh** fires on every Bash command. It catches:
+**prefect-bash-guard.sh** fires on Bash command. It catches:
 - `echo "x" > CLAUDE.md` and similar redirects to protected files
 - `sed -i`, `rm`, `mv`, `cp` targeting protected files
 - `git commit --no-verify` (prevents skipping test hooks)
@@ -214,7 +214,7 @@ Together these two hooks make it extremely difficult for Claude to modify its ow
 
 ### Layer 2: Detection (post-hoc validation)
 
-**prefect-post-check.sh** runs after every Write/Edit and validates the result.
+**prefect-post-check.sh** runs after Write/Edit and validates the result.
 
 **prefect-audit.sh** scores your project health across 8 dimensions:
 

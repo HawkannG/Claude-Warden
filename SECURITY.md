@@ -58,12 +58,6 @@ Or contact the maintainer directly (see README).
 - Impact and affected versions
 - Suggested fix (optional)
 
-### Response Timeline
-
-- Initial response: Within 48 hours
-- Fix timeline: 2-4 weeks depending on severity
-- Public disclosure: After fix is released
-
 ## Security Fixes in v6.0
 
 Version 6.0 addresses 9 security vulnerabilities:

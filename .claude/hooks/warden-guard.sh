@@ -4,7 +4,34 @@ set -euo pipefail
 # Blocks file operations that violate WARDEN-POLICY.md rules
 # Exit 0 = allow, Exit 1 = block (with reason on stderr), Exit 2 = error
 
-AUDIT_LOG="${CLAUDE_PROJECT_DIR:-.}/.claude/audit.log"
+# ── LOAD USER CONFIGURATION (Tier 2 - never overwritten) ──
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-.}"
+if [ -f "$PROJECT_ROOT/warden.config.sh" ]; then
+  # SECURITY: Sourcing user-editable code is risky, but necessary for config flexibility.
+  # warden.config.sh is protected in PROTECTED_FILES and has a hardcoded check below.
+  source "$PROJECT_ROOT/warden.config.sh"
+else
+  # Defaults (when no config file exists)
+  PROTECTED_FILES=(
+    ".claude/CLAUDE.md"
+    ".claude/rules/*.md"
+    ".claude/hooks/*.sh"
+    ".claude/settings.json"
+    "lockdown.sh"
+    "warden.config.sh"
+  )
+  FORBIDDEN_DIRS=(
+    "temp" "tmp" "misc" "stuff" "old"
+    "backup" "bak" "scratch" "junk" "archive"
+  )
+  MAX_DIRECTORY_DEPTH=5
+  AUDIT_LOG_PATH=".claude/audit.log"
+  EXIT_ALLOW=0
+  EXIT_BLOCK=1
+  EXIT_ERROR=2
+fi
+
+AUDIT_LOG="$PROJECT_ROOT/${AUDIT_LOG_PATH:-.claude/audit.log}"
 log_audit() {
   local level="$1" msg="$2"
   echo "$(date -u '+%Y-%m-%dT%H:%M:%SZ') [$level] $msg" >> "$AUDIT_LOG" 2>/dev/null || true
@@ -41,10 +68,46 @@ case "$FILE_PATH" in
     ;;
 esac
 
+# ── CROSS-PLATFORM PATH RESOLUTION HELPER ────────────
+# Works on Linux, macOS, and WSL
+resolve_path() {
+  local path="$1"
+  local resolved=""
+
+  # Try realpath first (Linux, Homebrew on macOS)
+  if command -v realpath &>/dev/null; then
+    resolved=$(realpath -m "$path" 2>/dev/null)
+    if [ -n "$resolved" ]; then
+      echo "$resolved"
+      return 0
+    fi
+  fi
+
+  # Fallback for macOS: use Python3 (installed by default on macOS)
+  # FIX: Pass path as argv to prevent injection attacks
+  if command -v python3 &>/dev/null; then
+    resolved=$(python3 -c "import os,sys; print(os.path.realpath(sys.argv[1]))" "$path" 2>/dev/null)
+    if [ -n "$resolved" ]; then
+      echo "$resolved"
+      return 0
+    fi
+  fi
+
+  # Last resort: readlink -f (Linux only, fails on macOS)
+  resolved=$(readlink -f "$path" 2>/dev/null)
+  if [ -n "$resolved" ]; then
+    echo "$resolved"
+    return 0
+  fi
+
+  # If all methods fail, return empty
+  return 1
+}
+
 # ── FIX V1: SYMLINK ATTACK PROTECTION ─────────────────
 # Resolve symlinks to real path before any checks
 if [ -L "$FILE_PATH" ]; then
-  REAL_PATH=$(realpath "$FILE_PATH" 2>/dev/null || readlink -f "$FILE_PATH" 2>/dev/null)
+  REAL_PATH=$(resolve_path "$FILE_PATH")
   if [ -n "$REAL_PATH" ]; then
     FILE_PATH="$REAL_PATH"
     log_audit "SYMLINK" "Resolved symlink: $FILE_PATH"
@@ -53,16 +116,19 @@ fi
 
 # ── FIX V2: PATH TRAVERSAL PROTECTION ─────────────────
 # Resolve to canonical path (handles encoded .., symlinks, relative paths)
-CANONICAL_PATH=$(realpath -m "$FILE_PATH" 2>/dev/null)
+CANONICAL_PATH=$(resolve_path "$FILE_PATH")
 if [ -z "$CANONICAL_PATH" ]; then
   log_audit "BLOCK" "Failed to resolve canonical path: $FILE_PATH"
   echo "🛑 WARDEN BLOCK: Invalid file path '$FILE_PATH'." >&2
+  echo "   → Install realpath (Linux: coreutils, macOS: brew install coreutils)" >&2
+  echo "   → Or ensure python3 is available (default on macOS)" >&2
   exit 1
 fi
 
 # Verify canonical path is inside PROJECT_DIR
+# FIX: Add trailing slash to prevent sibling directory bypass (project-secrets/ vs project/)
 case "$CANONICAL_PATH" in
-  "$CANONICAL_PROJECT"*)
+  "$CANONICAL_PROJECT"/*)
     # Path is inside project, OK
     ;;
   *)
@@ -85,37 +151,49 @@ DIRNAME=$(dirname "$REL_PATH")
 # These rules MUST come first. No exceptions. No workarounds.
 # ══════════════════════════════════════════════════════
 
-# ── RULE 0a: HOOK SCRIPTS are HUMAN-ONLY ──────────────
-if echo "$REL_PATH" | grep -qE '^\.claude/hooks/'; then
-  log_audit "BLOCK" "Attempted edit of hook script: $REL_PATH"
-  echo "🛑 WARDEN BLOCK: Hook scripts (.claude/hooks/) are human-edit-only." >&2
-  echo "   → Claude cannot modify its own enforcement. Suggest changes in chat." >&2
+# ── RULE 0: HARDCODED PROTECTION (Defense-in-Depth) ──────
+# These checks run BEFORE config-driven checks as a safety net
+# in case someone empties warden.config.sh or it's misconfigured.
+
+# RULE 0a: warden.config.sh itself (CRITICAL - prevents arbitrary code execution)
+if echo "$REL_PATH" | grep -qE '^warden\.config\.sh$'; then
+  log_audit "BLOCK" "Attempted edit of warden.config.sh"
+  echo "🛑 WARDEN BLOCK: warden.config.sh is human-edit-only." >&2
+  echo "   → This file is sourced by hooks. Editing via Claude could execute arbitrary code." >&2
+  echo "   → Edit manually with a text editor." >&2
   exit 1
 fi
 
-# ── RULE 0b: SETTINGS.JSON is HUMAN-ONLY ──────────────
+# RULE 0b: Hook scripts (redundant with PROTECTED_FILES but kept as failsafe)
+if echo "$REL_PATH" | grep -qE '^\.claude/hooks/.*\.sh$'; then
+  log_audit "BLOCK" "Attempted edit of hook script: $REL_PATH"
+  echo "🛑 WARDEN BLOCK: Hooks cannot modify themselves." >&2
+  exit 1
+fi
+
+# RULE 0c: settings.json (redundant with PROTECTED_FILES but kept as failsafe)
 if echo "$REL_PATH" | grep -qE '^\.claude/settings\.json$'; then
   log_audit "BLOCK" "Attempted edit of settings.json: $REL_PATH"
-  echo "🛑 WARDEN BLOCK: .claude/settings.json is human-edit-only." >&2
-  echo "   → Claude cannot modify hook configuration. Suggest changes in chat." >&2
+  echo "🛑 WARDEN BLOCK: settings.json is managed by Claude Code, not hooks." >&2
   exit 1
 fi
 
-# ── RULE 0c: .claude/CLAUDE.md is HUMAN-ONLY ──────────────────
-if echo "$REL_PATH" | grep -qE '^\.claude/CLAUDE\.md$'; then
-  log_audit "BLOCK" "Attempted edit of .claude/CLAUDE.md"
-  echo "🛑 WARDEN BLOCK: .claude/CLAUDE.md is human-edit-only." >&2
-  echo "   → Claude cannot modify its own instructions. Suggest changes in chat." >&2
-  exit 1
-fi
+# ── RULE 0: PROTECTED FILES (from warden.config.sh) ────────
+# Config-driven checks for user-customizable protected file patterns
+for pattern in "${PROTECTED_FILES[@]}"; do
+  # Convert glob pattern to regex for matching
+  # FIX: Escape dots BEFORE converting wildcards (order matters!)
+  pattern_regex=$(echo "$pattern" | sed 's/\./\\./g' | sed 's/\*/[^/]*/g')
 
-# ── RULE 0d: .claude/rules/*.md are HUMAN-ONLY ─────────
-if echo "$REL_PATH" | grep -qE '^\.claude/rules/.*\.md$'; then
-  log_audit "BLOCK" "Attempted edit of rules file: $REL_PATH"
-  echo "🛑 WARDEN BLOCK: Rules files (.claude/rules/*.md) are human-edit-only (Policy §2.1)." >&2
-  echo "   → Suggest your changes in chat. The human will edit governance files." >&2
-  exit 1
-fi
+  if echo "$REL_PATH" | grep -qE "^${pattern_regex}$"; then
+    log_audit "BLOCK" "Attempted edit of protected file: $REL_PATH"
+    echo "🛑 WARDEN BLOCK: '$REL_PATH' is a protected file (Tier 2 - user-owned)." >&2
+    echo "   → This file cannot be modified via Write/Edit tools." >&2
+    echo "   → For governance files: Suggest changes in chat. The human will edit." >&2
+    echo "   → To customize: Edit warden.config.sh PROTECTED_FILES array." >&2
+    exit ${EXIT_BLOCK:-1}
+  fi
+done
 
 # ══════════════════════════════════════════════════════
 # STRUCTURAL RULES — File placement and organization
@@ -124,8 +202,8 @@ fi
 # ── RULE 1: ROOT LOCKDOWN ─────────────────────────────
 if [ "$DIRNAME" = "." ] || [ "$DIRNAME" = "$PROJECT_DIR" ]; then
   ALLOWED_ROOT=(
-    "README.md" "SECURITY.md" "LICENSE" "LICENSE.md"
-    "lockdown.sh"
+    "README.md" "SECURITY.md" "LICENSE" "LICENSE.md" "CHANGELOG.md"
+    "lockdown.sh" "warden.config.sh"
     "package.json" "package-lock.json" "pnpm-lock.yaml" "yarn.lock"
     "tsconfig.json" "requirements.txt" "pyproject.toml"
     "setup.py" "setup.cfg" "Makefile" "Dockerfile"
@@ -168,8 +246,8 @@ if [ "$DEPTH" -gt 6 ]; then
   exit 1
 fi
 
-# ── RULE 3: FORBIDDEN DIRECTORY NAMES ─────────────────
-FORBIDDEN_DIRS=("temp" "tmp" "misc" "stuff" "old" "backup" "bak" "scratch" "junk" "archive")
+# ── RULE 3: FORBIDDEN DIRECTORY NAMES (from warden.config.sh) ─────────────────
+# FORBIDDEN_DIRS loaded from config at top of file (no hardcoded override)
 for dir in $(echo "$REL_PATH" | tr '/' '\n'); do
   dir_lower=$(echo "$dir" | tr '[:upper:]' '[:lower:]')
   for forbidden in "${FORBIDDEN_DIRS[@]}"; do

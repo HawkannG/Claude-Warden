@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+# warden.config.sh — User Configuration
+# This file is NEVER overwritten by Warden updates (Tier 2 - User-owned)
+# Customize these values for your project needs
+
+# Files protected from Claude editing (glob patterns supported: *.md, path/*, etc.)
+# NOTE: warden.config.sh is ALWAYS protected (hardcoded) to prevent arbitrary code execution
+PROTECTED_FILES=(
+  ".claude/CLAUDE.md"
+  ".claude/rules/*.md"
+  ".claude/hooks/*.sh"
+  ".claude/settings.json"
+  "lockdown.sh"
+  "warden.config.sh"      # Redundant (hardcoded check exists) but explicit
+  ".claude/audit.log"     # Preserve audit history
+  "docs/SESSION-LOG.md"   # Preserve session handoffs
+)
+
+# Directory names that are forbidden (case-insensitive)
+FORBIDDEN_DIRS=(
+  "temp"
+  "tmp"
+  "misc"
+  "stuff"
+  "old"
+  "backup"
+  "bak"
+  "scratch"
+  "junk"
+  "archive"
+)
+
+# Maximum directory nesting depth from project root (e.g., /a/b/c/d/e = 5 levels)
+MAX_DIRECTORY_DEPTH=5
+
+# Exit codes (don't change unless you know what you're doing)
+EXIT_ALLOW=0
+EXIT_BLOCK=1
+EXIT_ERROR=2
+
+# Audit log path (relative to project root)
+AUDIT_LOG_PATH=".claude/audit.log"
+
+# Session log path (relative to project root)
+SESSION_LOG_PATH="docs/SESSION-LOG.md"

@@ -1,8 +1,15 @@
 # Claude Warden AI Governance Framework
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/claude-warden/releases/tag/v1.0.0)
+[![Tests](https://img.shields.io/badge/tests-300%2B-success.svg)](./tests)
+[![Last Updated](https://img.shields.io/badge/updated-Feb%202026-brightgreen.svg)](https://github.com/yourusername/claude-warden)
+
 > Self-protecting governance hooks that tries to prevent Claude from editing its own instructions.
 
 ## Quick Demo
+
+![Warden in action - blocking Claude from editing governance files](./docs/images/warden-demo.gif)
 
 **Try this prompt with Claude Code:**
 ```
@@ -14,6 +21,8 @@
 🛑 WARDEN BLOCK: .claude/CLAUDE.md is human-edit-only.
 → Claude cannot modify its own instructions. Suggest changes in chat.
 ```
+
+**Real-world example:** See the GIF above showing Claude attempting to delete CLAUDE.md, getting blocked on `/tmp/` directory creation, and finding a workaround - demonstrating both Warden's protection and its documented limitations.
 
 ## What Makes This Different?
 
@@ -190,19 +199,81 @@ This will:
 - ✅ Test hooks are working
 - ✅ Re-lock governance files
 
+## Updating Warden
+
+### Quick Update
+
+```bash
+./.claude/hooks/warden-update.sh
+```
+
+### What Gets Updated (Tier 1 - Plugin-Owned)
+
+✅ **Hook scripts** — Bug fixes, security patches, new features
+✅ **Helper scripts** — lockdown.sh, install.sh
+
+### What Stays Yours (Tier 2 - User-Owned)
+
+🔒 **Your governance files** — `.claude/CLAUDE.md`, `.claude/rules/*.md`
+🔒 **Your configuration** — `.claude/settings.json`, `warden.config.sh`
+🔒 **Your history** — `.claude/audit.log`, `docs/SESSION-LOG.md`
+
+**All customizations and logs are preserved during updates.**
+
+### Customizing Warden
+
+Edit `warden.config.sh` to customize protected files, forbidden directories, and other settings:
+
+```bash
+# warden.config.sh (never overwritten by updates)
+PROTECTED_FILES=(
+  ".claude/CLAUDE.md"
+  ".claude/rules/*.md"
+  "contracts/**/*.sol"  # Add your custom paths
+)
+
+FORBIDDEN_DIRS=(
+  "temp" "tmp" "misc"
+  "drafts" "wip"        # Add your custom forbidden names
+)
+```
+
+Your customizations survive all updates.
+
 ## Uninstall
 
 Remove Warden completely from a project:
+
+### Automated Uninstall (Recommended)
 
 ```bash
 cd your-project
 curl -fsSL https://raw.githubusercontent.com/HawkannG/Claude-Warden/main/uninstall.sh | bash
 ```
 
-Or manually:
+The uninstaller will:
+- ✅ Unlock all governance files
+- ✅ Remove `.claude/` directory
+- ✅ Remove all governance files (WARDEN-*.md, CLAUDE.md, D-*.md)
+- ✅ Remove helper scripts (lockdown.sh, warden.config.sh)
+- ✅ Remove Warden documentation files
+- ✅ Verify complete removal
+
+### Manual Uninstall
+
+If you prefer manual removal:
+
 ```bash
+# 1. Unlock governance files
 ./lockdown.sh unlock
-rm -rf .claude/ lockdown.sh docs/PRODUCT-SPEC.md docs/AI-UAT-CHECKLIST.md
+
+# 2. Remove all Warden files
+rm -rf .claude/
+rm -f warden.config.sh lockdown.sh
+rm -f docs/PRODUCT-SPEC.md docs/AI-UAT-CHECKLIST.md
+
+# 3. Verify removal
+ls -la | grep -E "\.claude|warden|lockdown"
 ```
 
 ## Framework Directory Structure

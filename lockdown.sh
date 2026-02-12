@@ -5,6 +5,7 @@
 set -euo pipefail
 
 GOVERNANCE_FILES=(
+  "lockdown.sh"
   ".claude/CLAUDE.md"
   ".claude/rules/policy.md"
   ".claude/rules/workflow.md"

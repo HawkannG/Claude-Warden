@@ -81,16 +81,30 @@ test_base64_encoding() {
   local result=$(run_bash_hook "echo 'ZWNobyBoYWNrZWQgPiBDTEFVREUubWQ=' | base64 -d | bash")
 
   if [ "$result" -eq 1 ]; then
-    echo -e "${GREEN}✅ BLOCKED${NC}"
+    echo -e "${GREEN}✅ BLOCKED (dangerous construct)${NC}"
     ((PASS++))
   else
-    echo -e "${YELLOW}⚠️  ALLOWED — Base64 bypass works${NC}"
-    ((WARN++))
+    echo -e "${RED}❌ ALLOWED — Base64 bypass should be blocked${NC}"
+    ((FAIL++))
+  fi
+}
+
+test_eval_bypass() {
+  echo -n "  Test 3.5: Eval bypass... "
+
+  local result=$(run_bash_hook "eval \"echo hacked > $TEST_DIR/CLAUDE.md\"")
+
+  if [ "$result" -eq 1 ]; then
+    echo -e "${GREEN}✅ BLOCKED (dangerous construct)${NC}"
+    ((PASS++))
+  else
+    echo -e "${RED}❌ ALLOWED — Eval bypass should be blocked${NC}"
+    ((FAIL++))
   fi
 }
 
 test_heredoc() {
-  echo -n "  Test 3.5: Heredoc bypass... "
+  echo -n "  Test 3.6: Heredoc bypass... "
 
   local cmd="cat > $TEST_DIR/CLAUDE.md << 'EOF'
 hacked
@@ -108,7 +122,7 @@ EOF"
 }
 
 test_tee_indirect() {
-  echo -n "  Test 3.6: Tee indirect write... "
+  echo -n "  Test 3.7: Tee indirect write... "
 
   local result=$(run_bash_hook "echo hacked | tee $TEST_DIR/CLAUDE.md")
 
@@ -122,7 +136,7 @@ test_tee_indirect() {
 }
 
 test_safe_read_allowed() {
-  echo -n "  Test 3.7: Safe read operation... "
+  echo -n "  Test 3.8: Safe read operation... "
 
   local result=$(run_bash_hook "cat $TEST_DIR/CLAUDE.md")
 
@@ -146,6 +160,7 @@ test_direct_write_blocked
 test_variable_expansion
 test_command_substitution
 test_base64_encoding
+test_eval_bypass
 test_heredoc
 test_tee_indirect
 test_safe_read_allowed

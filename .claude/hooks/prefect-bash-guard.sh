@@ -25,7 +25,17 @@ if [ -z "$CMD" ]; then
   exit 0
 fi
 
-# ── RULE 1: PROTECT GOVERNANCE FILES FROM BASH WRITES ──
+# ── RULE 1: BLOCK DANGEROUS CONSTRUCTS ────────────────
+# High-confidence patterns that are rarely legitimate in project work
+# Catches: base64 decode piped, eval with strings, source from /dev/
+if echo "$CMD" | grep -qE '(base64\s+-d.*\||eval\s+["'\''`]|source\s+/dev/)'; then
+  log_audit "BLOCK" "Dangerous bash construct: $CMD"
+  echo "🛑 PREFECT BLOCK: Forbidden bash construct detected." >&2
+  echo "   → Blocked patterns: base64 -d (piped), eval (with strings), source /dev/" >&2
+  exit 1
+fi
+
+# ── RULE 2: PROTECT GOVERNANCE FILES FROM BASH WRITES ──
 # Block any bash command that writes to protected files
 PROTECTED_FILES="PREFECT-POLICY\.md|CLAUDE\.md|lockdown\.sh|\.claude/hooks/|\.claude/settings\.json"
 
@@ -41,7 +51,7 @@ if echo "$CMD" | grep -qE "(>|>>|tee|sed\s+-i|mv\s|cp\s|rm\s|chmod|chown)" ; the
   fi
 fi
 
-# ── RULE 2: BLOCK HOOK SELF-MODIFICATION ───────────────
+# ── RULE 3: BLOCK HOOK SELF-MODIFICATION ───────────────
 # Extra paranoid check — any command referencing hook scripts with write intent
 if echo "$CMD" | grep -qE "prefect-(guard|post-check|session-end|audit|bash-guard)\.sh" ; then
   if echo "$CMD" | grep -qE "(>|>>|tee|sed\s+-i|mv\s|cp\s|rm\s|chmod|chown|nano|vim|vi\s|emacs|edit)" ; then
@@ -51,7 +61,7 @@ if echo "$CMD" | grep -qE "prefect-(guard|post-check|session-end|audit|bash-guar
   fi
 fi
 
-# ── RULE 3: BLOCK SETTINGS.JSON MODIFICATION ──────────
+# ── RULE 4: BLOCK SETTINGS.JSON MODIFICATION ──────────
 if echo "$CMD" | grep -qE "settings\.json" ; then
   if echo "$CMD" | grep -qE "(>|>>|tee|sed\s+-i|mv\s|cp\s|rm\s)" ; then
     log_audit "BLOCK" "Bash attempt to modify settings.json: $CMD"
@@ -60,7 +70,7 @@ if echo "$CMD" | grep -qE "settings\.json" ; then
   fi
 fi
 
-# ── RULE 4: BLOCK FORBIDDEN DIRECTORIES VIA BASH ──────
+# ── RULE 5: BLOCK FORBIDDEN DIRECTORIES VIA BASH ──────
 # Match forbidden directory names with or without slashes
 # Patterns: mkdir temp, mkdir -p tmp/, touch temp/file.txt, echo > misc/file
 FORBIDDEN_DIRS="\btemp\b|\btmp\b|\bmisc\b|\bstuff\b|\bold\b|\bbackup\b|\bbak\b|\bscratch\b|\bjunk\b|\barchive\b"
